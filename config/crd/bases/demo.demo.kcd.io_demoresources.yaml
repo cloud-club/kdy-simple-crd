@@ -34,6 +34,8 @@ spec:
           spec:
             description: DemoResourceSpec defines the desired state of DemoResource
             properties:
+              myName:
+                type: string
               name:
                 description: Foo is an example field of DemoResource. Edit demoresource_types.go
                   to remove/update

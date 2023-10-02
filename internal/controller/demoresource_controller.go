@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,21 +53,37 @@ func (r *DemoResourceReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	l := log.FromContext(ctx)
 	l.Info("Enter Reconcile", "req", req)
 
-	testres := &demov1.DemoResource{}
-	r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, testres)
-	l.Info("Enter Reconcile", "spec", testres.Spec, "status", testres.Status)
-
-	if testres.Spec.Name != testres.Status.Name {
-		testres.Status.Name = testres.Spec.Name
-		r.Status().Update(ctx, testres)
+	demoResource := &demov1.DemoResource{}
+	if err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, demoResource); err != nil {
+		return ctrl.Result{}, err
 	}
 
-	r.reconcilePOD(ctx, testres, l)
+	demoResourceList := &demov1.DemoResourceList{}
+	if err := r.List(ctx, demoResourceList, client.InNamespace(req.Namespace)); err != nil {
+		return ctrl.Result{}, err
+	}
+	for idx := range demoResourceList.Items {
+		l.Info("%d : %s\n", idx, demoResourceList.Items[idx].Name)
+		l.Info(demoResourceList.Items[idx].Spec.MyName)
+	}
+
+	l.Info("Enter Reconcile", "spec", demoResource.Spec, "status", demoResource.Status)
+
+	if demoResource.Spec.Name != demoResource.Status.Name {
+		demoResource.Status.Name = demoResource.Spec.Name
+		if err := r.Status().Update(ctx, demoResource); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	if err := r.reconcilePOD(ctx, demoResource, l); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
-func (r *DemoResourceReconciler) reconcilePOD(ctx context.Context, testres *demov1.DemoResource, l logr.Logger) error {
-	name, namespace := testres.Name, testres.Namespace
+func (r *DemoResourceReconciler) reconcilePOD(ctx context.Context, demoResource *demov1.DemoResource, l logr.Logger) error {
+	name, namespace := demoResource.Name, demoResource.Namespace
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -78,7 +93,7 @@ func (r *DemoResourceReconciler) reconcilePOD(ctx context.Context, testres *demo
 		Spec: v1.PodSpec{
 			RestartPolicy: v1.RestartPolicyNever,
 			Containers: []v1.Container{
-				v1.Container{
+				{
 					Name:  "nginx",
 					Image: "nginx:latest",
 				},

@@ -16,19 +16,42 @@ You’ll need a Kubernetes cluster to run against. You can use [KIND](https://si
 ```sh
 $ make manifest
 ```
-2. Local 쿠버네티스 클러스터에 CRD 등록하기
+- controller_gen 프로그램을 통해 CR 파일 생성
+```sh
+manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+```
+2. Local 쿠버네티스 클러스터에 CR 등록하기
 ```sh
 $ make install
 $ kubectl get crds
 NAME                             CREATED AT
 demoresources.demo.demo.kcd.io   2023-10-01T07:22:22Z
 ```
+- kustomize 프로그램을 통해 crd 생성 후 쿠버네티스 클러스터에 CR 생성
+```sh
+install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -
+```
+
 3. CRD를 참고하여 작성한 yaml 파일 기반 CR을 쿠버네티스에 적용
 ```sh
 # spec에 변수 값 써주기
 $ kubectl apply -k config/samples/demo_v1_demoresource.yaml
 ```
-
+4. Local 환경에서 Operator 작동시키기
+```sh
+# spec에 변수 값 써주기
+$ make run
+```
+- Operator는 프로세스로 작동한다.
+- 즉, go 바이너리 파일을 실행
+```sh
+# Makefile
+# cmd에 있는 main 파일을 실행하여 프로세스를 띄운다. 
+run: manifests generate fmt vet ## Run a controller from your host.
+	go run ./cmd/main.go
+```
 ### Uninstall CRDs
 To delete the CRDs from the cluster:
 

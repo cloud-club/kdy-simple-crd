@@ -12,3 +12,4 @@ spec:
   # TODO(user): Add fields here
   name: app
   namespace: default
+  myName: hello

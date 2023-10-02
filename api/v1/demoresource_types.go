@@ -31,6 +31,7 @@ type DemoResourceSpec struct {
 	// Foo is an example field of DemoResource. Edit demoresource_types.go to remove/update
 	Name      string `json:"name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
+	MyName    string `json:"myName,omitempty"`
 }
 
 // DemoResourceStatus defines the observed state of DemoResource
